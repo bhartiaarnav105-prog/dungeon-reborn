@@ -3,6 +3,12 @@
 > **A 2D Object-Oriented Dungeon Adventure Game in C++17 & SFML 2.6.2**  
 > *Designed and engineered as a comprehensive demonstration of Object-Oriented Programming (OOP) in C++.*
 
+[![Play in Browser](https://img.shields.io/badge/PLAY%20ONLINE-WebAssembly%20Edition-gold?style=for-the-badge&logo=webassembly)](https://bhartiaarnav105-prog.github.io/dungeon-reborn/)
+[![GitHub Pages](https://img.shields.io/badge/DEPLOYED%20TO-GitHub%20Pages-blue?style=for-the-badge&logo=github)](https://bhartiaarnav105-prog.github.io/dungeon-reborn/)
+
+**Play directly in your browser:**  
+👉 **[https://bhartiaarnav105-prog.github.io/dungeon-reborn/](https://bhartiaarnav105-prog.github.io/dungeon-reborn/)**
+
 ---
 
 ## 1. Project Overview
