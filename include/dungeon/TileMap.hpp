@@ -28,6 +28,13 @@ private:
     int   m_rows;
     float m_tileSize; // display size in pixels (16 * scale)
 
+    // Cached GPU vertex batches for high-performance single-draw-call rendering
+    mutable sf::VertexArray m_tileVertices;
+    mutable sf::VertexArray m_shadowVertices;
+    mutable bool            m_verticesDirty;
+
+    void rebuildVertexArrays() const;
+
 public:
     // ============================================================
     // OOP CONCEPT: CONSTRUCTORS

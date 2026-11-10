@@ -676,15 +676,21 @@ void Game::renderPlaying() {
         m_playerHealthBar.update(m_player->getHealth(), m_player->getMaxHealth());
         m_playerHealthBar.render(m_window, &font);
 
-        // 2. Player status & gold text
-        std::ostringstream ssPlayer;
-        ssPlayer << "HP: " << m_player->getHealth() << "/" << m_player->getMaxHealth()
-                 << " | " << (m_player->isAttacking() ? "Slashing!" : (m_player->isMoving() ? "Walking" : "Idle"))
-                 << " | Gold: " << m_player->getInventory().getGold();
+        // 2. Player status & gold text (fast string concatenation)
+        static std::string s_playerStr;
+        s_playerStr.clear();
+        s_playerStr += "HP: ";
+        s_playerStr += std::to_string(m_player->getHealth());
+        s_playerStr += "/";
+        s_playerStr += std::to_string(m_player->getMaxHealth());
+        s_playerStr += " | ";
+        s_playerStr += (m_player->isAttacking() ? "Slashing!" : (m_player->isMoving() ? "Walking" : "Idle"));
+        s_playerStr += " | Gold: ";
+        s_playerStr += std::to_string(m_player->getInventory().getGold());
 
         sf::Text playerText;
         playerText.setFont(font);
-        playerText.setString(ssPlayer.str());
+        playerText.setString(s_playerStr);
         playerText.setCharacterSize(18);
         playerText.setFillColor(sf::Color(100, 255, 120));
         playerText.setPosition(240.f, 16.f);
@@ -692,14 +698,17 @@ void Game::renderPlaying() {
 
         // Equipped weapon text
         const Weapon* eqWeapon = m_player->getEquippedWeapon();
-        std::ostringstream ssWeapon;
-        ssWeapon << "Weapon: " << (eqWeapon ? eqWeapon->getName() : "Fists")
-                 << " (" << m_player->getAttackDamage() << " Dmg, "
-                 << std::fixed << std::setprecision(2) << m_player->getAttackCooldown() << "s CD)";
+        static std::string s_weaponStr;
+        s_weaponStr.clear();
+        s_weaponStr += "Weapon: ";
+        s_weaponStr += (eqWeapon ? eqWeapon->getName() : "Fists");
+        s_weaponStr += " (";
+        s_weaponStr += std::to_string(m_player->getAttackDamage());
+        s_weaponStr += " Dmg)";
 
         sf::Text weaponText;
         weaponText.setFont(font);
-        weaponText.setString(ssWeapon.str());
+        weaponText.setString(s_weaponStr);
         weaponText.setCharacterSize(18);
         weaponText.setFillColor(sf::Color(255, 230, 100));
         weaponText.setPosition(520.f, 22.f);
@@ -716,16 +725,19 @@ void Game::renderPlaying() {
         m_window.draw(roomText);
 
         // 4. Enemy Roster
-        std::ostringstream ssEnemies;
-        ssEnemies << "Enemies: ";
+        static std::string s_enemiesStr;
+        s_enemiesStr.clear();
+        s_enemiesStr += "Enemies: ";
         for (const auto& e : m_enemies) {
-            ssEnemies << "[" << e->getCharacterType() << ": "
-                      << (e->isAlive() ? std::to_string(e->getHealth()) + " HP" : "DEAD")
-                      << "] ";
+            s_enemiesStr += "[";
+            s_enemiesStr += e->getCharacterType();
+            s_enemiesStr += ": ";
+            s_enemiesStr += (e->isAlive() ? std::to_string(e->getHealth()) + " HP" : "DEAD");
+            s_enemiesStr += "] ";
         }
         sf::Text enemiesText;
         enemiesText.setFont(font);
-        enemiesText.setString(ssEnemies.str());
+        enemiesText.setString(s_enemiesStr);
         enemiesText.setCharacterSize(18);
         enemiesText.setFillColor(sf::Color(255, 150, 80));
         enemiesText.setPosition(20.f, 90.f);

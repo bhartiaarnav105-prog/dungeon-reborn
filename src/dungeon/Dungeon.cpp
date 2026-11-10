@@ -139,14 +139,15 @@ void Dungeon::update(float                                deltaTime,
     // OOP CONCEPT: RUNTIME POLYMORPHISM & ENCAPSULATION
     // Why: Query blocking interactables (e.g. locked doors) and resolve collision
     // against them so the player cannot physically walk through closed or locked doors.
-    std::vector<sf::FloatRect> blockingRects;
+    static std::vector<sf::FloatRect> s_blockingRects;
+    s_blockingRects.clear();
     for (const auto& interactable : room.getInteractables()) {
         if (interactable && interactable->isActive() && interactable->isBlocking()) {
-            blockingRects.push_back(interactable->getBounds());
+            s_blockingRects.push_back(interactable->getBounds());
         }
     }
-    if (!blockingRects.empty()) {
-        safeMove = CollisionSystem::resolveCollision(playerBounds, safeMove, blockingRects);
+    if (!s_blockingRects.empty()) {
+        safeMove = CollisionSystem::resolveCollision(playerBounds, safeMove, s_blockingRects);
     }
 
     // Set position to collision-resolved destination.
@@ -199,8 +200,8 @@ void Dungeon::update(float                                deltaTime,
         sf::Vector2f safeDelta = CollisionSystem::resolveTileCollision(eBounds, displacement, map);
         // OOP CONCEPT: ENCAPSULATION
         // Why: Enemies must respect dungeon boundaries and cannot pass through locked doors.
-        if (!blockingRects.empty()) {
-            safeDelta = CollisionSystem::resolveCollision(eBounds, safeDelta, blockingRects);
+        if (!s_blockingRects.empty()) {
+            safeDelta = CollisionSystem::resolveCollision(eBounds, safeDelta, s_blockingRects);
         }
         enemy->setPosition(beforePos + safeDelta);
     }
@@ -305,40 +306,53 @@ void Dungeon::updateCombat(float deltaTime,
         soundMgr->playSound("hurt");
     }
 
-    // 3. Projectiles update & collision resolution
-    Room& room = getCurrentRoom();
-    auto solidRects = room.getTileMap().getSolidRects();
+    // 3. Projectiles update & collision resolution (O(1) direct tile checks without vector allocations)
+    if (!m_projectiles.empty()) {
+        const TileMap& tileMap = getCurrentRoom().getTileMap();
+        const float tileSize = tileMap.getTileSize();
 
-    for (auto& proj : m_projectiles) {
-        if (!proj.isAlive()) continue;
-        proj.update(deltaTime);
+        for (auto& proj : m_projectiles) {
+            if (!proj.isAlive()) continue;
+            proj.update(deltaTime);
 
-        // Player collision
-        if (player.isAlive() && (proj.getGlobalBounds().intersects(player.getCollisionBounds()) || proj.getGlobalBounds().intersects(player.getGlobalBounds()))) {
-            player.takeDamage(proj.getDamage());
-            proj.destroy();
-            if (soundMgr) soundMgr->playSound("hurt");
-            std::cout << "[Combat] Projectile struck player! - " << proj.getDamage() << " HP (Player HP: " << player.getHealth() << ")\n";
-            continue;
-        }
-
-        // Solid wall collision: inset projectile bounds to avoid spawn clipping
-        sf::FloatRect pb = proj.getGlobalBounds();
-        sf::FloatRect pInset(pb.left + 4.f, pb.top + 4.f, std::max(2.f, pb.width - 8.f), std::max(2.f, pb.height - 8.f));
-        for (const auto& solid : solidRects) {
-            if (pInset.intersects(solid)) {
+            // Player collision
+            if (player.isAlive() && (proj.getGlobalBounds().intersects(player.getCollisionBounds()) || proj.getGlobalBounds().intersects(player.getGlobalBounds()))) {
+                player.takeDamage(proj.getDamage());
                 proj.destroy();
-                break;
+                if (soundMgr) soundMgr->playSound("hurt");
+                std::cout << "[Combat] Projectile struck player! - " << proj.getDamage() << " HP (Player HP: " << player.getHealth() << ")\n";
+                continue;
+            }
+
+            // Solid wall collision: direct O(1) tile lookup
+            sf::FloatRect pb = proj.getGlobalBounds();
+            sf::FloatRect pInset(pb.left + 4.f, pb.top + 4.f, std::max(2.f, pb.width - 8.f), std::max(2.f, pb.height - 8.f));
+
+            int minCol = static_cast<int>(std::floor(pInset.left / tileSize));
+            int maxCol = static_cast<int>(std::floor((pInset.left + pInset.width) / tileSize));
+            int minRow = static_cast<int>(std::floor(pInset.top / tileSize));
+            int maxRow = static_cast<int>(std::floor((pInset.top + pInset.height) / tileSize));
+
+            bool hitWall = false;
+            for (int r = minRow; r <= maxRow && !hitWall; ++r) {
+                for (int c = minCol; c <= maxCol && !hitWall; ++c) {
+                    if (tileMap.isSolid(c, r)) {
+                        hitWall = true;
+                    }
+                }
+            }
+            if (hitWall) {
+                proj.destroy();
             }
         }
-    }
 
-    // Clean up inactive projectiles
-    m_projectiles.erase(
-        std::remove_if(m_projectiles.begin(), m_projectiles.end(),
-                       [](const Projectile& p) { return !p.isAlive(); }),
-        m_projectiles.end()
-    );
+        // Clean up inactive projectiles
+        m_projectiles.erase(
+            std::remove_if(m_projectiles.begin(), m_projectiles.end(),
+                           [](const Projectile& p) { return !p.isAlive(); }),
+            m_projectiles.end()
+        );
+    }
 }
 
 // ============================================================

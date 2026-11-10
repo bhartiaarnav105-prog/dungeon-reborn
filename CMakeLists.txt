@@ -5,6 +5,16 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Default to Release optimization mode across native and WebAssembly builds
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
+# Global optimization flags
+if(EMSCRIPTEN)
+    add_compile_options(-O3 -DNDEBUG)
+endif()
+
 # Static link GCC runtime for self-contained binaries on Windows
 if(MINGW)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -static-libgcc -static-libstdc++")
@@ -100,8 +110,10 @@ if(EMSCRIPTEN)
     # WebAssembly target properties & linker flags
     set_target_properties(DungeonReborn PROPERTIES SUFFIX ".html")
     target_link_options(DungeonReborn PRIVATE
+        "-O3"
         "-sUSE_WEBGL2=1"
         "-sFULL_ES2=1"
+        "-sINITIAL_MEMORY=67108864"
         "-sALLOW_MEMORY_GROWTH=1"
         "-sUSE_PTHREADS=1"
         "-pthread"
