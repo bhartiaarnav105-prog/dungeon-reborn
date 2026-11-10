@@ -168,10 +168,12 @@ void TileMap::rebuildVertexArrays() const {
 // Reduces WebGL draw calls from ~1000 down to 2, ensuring smooth 60 FPS performance.
 // ============================================================
 void TileMap::render(sf::RenderTarget& target, const sf::Texture& tileset) const {
-    if (m_verticesDirty) {
+    if (m_verticesDirty || m_tileVertices.getVertexCount() == 0) {
         rebuildVertexArrays();
     }
-    target.draw(m_tileVertices, &tileset);
+    if (m_tileVertices.getVertexCount() > 0) {
+        target.draw(m_tileVertices, &tileset);
+    }
     if (m_shadowVertices.getVertexCount() > 0) {
         target.draw(m_shadowVertices);
     }

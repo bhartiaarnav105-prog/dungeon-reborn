@@ -298,6 +298,15 @@
     </div>
 
     <script>
+        // Ensure no obsolete service workers intercept web requests
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (var r of registrations) {
+                    r.unregister();
+                }
+            });
+        }
+
         // Prevent default browser scrolling on arrow keys, space, and tab
         window.addEventListener("keydown", function(e) {
             if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Tab"].indexOf(e.code) > -1) {
