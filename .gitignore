@@ -25,6 +25,9 @@ cmake_install.cmake
 # Logs and temporary files
 *.log
 *.tmp
+temp_edge_profile*/
+scratch/
+gameplay_screenshot.png
 
 # Executables (Desktop builds)
 *.exe

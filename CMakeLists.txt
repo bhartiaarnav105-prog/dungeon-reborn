@@ -101,6 +101,7 @@ if(EMSCRIPTEN)
     set_target_properties(DungeonReborn PROPERTIES SUFFIX ".html")
     target_link_options(DungeonReborn PRIVATE
         "-sUSE_WEBGL2=1"
+        "-sFULL_ES2=1"
         "-sALLOW_MEMORY_GROWTH=1"
         "-sUSE_PTHREADS=1"
         "-pthread"
@@ -109,6 +110,7 @@ if(EMSCRIPTEN)
         "--use-port=vorbis"
         "-sSTACK_SIZE=4mb"
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
+        "-sEXPORTED_FUNCTIONS=['_main','_startGameFromWeb']"
         "--preload-file" "${CMAKE_CURRENT_SOURCE_DIR}/assets@/assets"
         "--shell-file" "${CMAKE_CURRENT_SOURCE_DIR}/web/shell.html"
     )

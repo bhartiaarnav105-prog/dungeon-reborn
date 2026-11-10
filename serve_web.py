@@ -5,8 +5,9 @@ import os
 import sys
 
 PORT = 8080
+DIST_WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist-web")
 BUILD_WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build-web")
-DIRECTORY = BUILD_WEB_DIR if os.path.exists(BUILD_WEB_DIR) else os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_web")
+DIRECTORY = DIST_WEB_DIR if os.path.exists(DIST_WEB_DIR) else (BUILD_WEB_DIR if os.path.exists(BUILD_WEB_DIR) else os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_web"))
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):

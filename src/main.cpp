@@ -2,6 +2,22 @@
 #include <iostream>
 #include <exception>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+
+static Game* g_activeGame = nullptr;
+
+extern "C" {
+EMSCRIPTEN_KEEPALIVE
+void startGameFromWeb() {
+    if (g_activeGame) {
+        g_activeGame->setState(GameState::Playing);
+        std::cout << "[Game] START GAME received from browser! State switched to Playing.\n";
+    }
+}
+}
+#endif
+
 // OOP CONCEPT: CLASSES AND OBJECTS
 // Why: main.cpp acts only as the minimal entry point. It creates a Game object
 // on the stack, demonstrating automatic lifetime management (RAII), and delegates
@@ -17,6 +33,7 @@ int main() {
         // Under WebAssembly, static storage keeps the engine persistent across browser frames.
 #ifdef __EMSCRIPTEN__
         static Game game(960, 640, "Dungeon Reborn - College OOP Project");
+        g_activeGame = &game;
 #else
         Game game(960, 640, "Dungeon Reborn - College OOP Project");
 #endif
