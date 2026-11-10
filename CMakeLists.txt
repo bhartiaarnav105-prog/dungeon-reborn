@@ -105,8 +105,8 @@ add_executable(DungeonReborn src/main.cpp)
 target_link_libraries(DungeonReborn PRIVATE DungeonCore)
 
 if(EMSCRIPTEN)
-    target_compile_options(DungeonCore PUBLIC -pthread)
-    target_compile_options(DungeonReborn PRIVATE -pthread)
+    # NO pthreads — game is single-threaded; pthreads require SharedArrayBuffer
+    # which GitHub Pages cannot serve (requires COOP/COEP headers).
     # WebAssembly target properties & linker flags
     set_target_properties(DungeonReborn PROPERTIES SUFFIX ".html")
     target_link_options(DungeonReborn PRIVATE
@@ -115,8 +115,6 @@ if(EMSCRIPTEN)
         "-sFULL_ES2=1"
         "-sINITIAL_MEMORY=67108864"
         "-sALLOW_MEMORY_GROWTH=1"
-        "-sUSE_PTHREADS=1"
-        "-pthread"
         "--use-port=freetype"
         "--use-port=ogg"
         "--use-port=vorbis"

@@ -76,17 +76,18 @@ TileType TileMap::charToTileType(char c) {
 // ============================================================
 // OOP CONCEPT: ENCAPSULATION & PERFORMANCE CACHING
 // Why: rebuildVertexArrays batches all tile geometry into a single sf::VertexArray.
-// Instead of issuing 600-1000 separate draw calls with individual sf::Sprite instances,
-// all quads are submitted to the GPU in exactly 2 batched draw calls, giving 60 FPS in WebAssembly.
+// Using sf::Triangles guarantees 100% compatibility across both desktop OpenGL and
+// WebAssembly (OpenGL ES 2.0 / WebGL), where sf::Quads is unsupported and dropped.
+// All room geometry is submitted to the GPU in exactly 2 batched draw calls, giving 60+ FPS.
 // ============================================================
 void TileMap::rebuildVertexArrays() const {
-    m_tileVertices.setPrimitiveType(sf::Quads);
+    m_tileVertices.setPrimitiveType(sf::Triangles);
     m_tileVertices.clear();
 
-    m_shadowVertices.setPrimitiveType(sf::Quads);
+    m_shadowVertices.setPrimitiveType(sf::Triangles);
     m_shadowVertices.clear();
 
-    // 1. Build Base Tile Quads
+    // 1. Build Base Tile Geometry (2 triangles per tile quad)
     for (int r = 0; r < m_rows; ++r) {
         for (int c = 0; c < m_cols; ++c) {
             const Tile& tile = m_grid[r][c];
@@ -124,15 +125,19 @@ void TileMap::rebuildVertexArrays() const {
             float u1 = u0 + static_cast<float>(tile.textureRect.width);
             float v1 = v0 + static_cast<float>(tile.textureRect.height);
 
-            // Add 4 vertices for the tile quad
+            // Triangle 1 (Top-Left, Top-Right, Bottom-Right)
             m_tileVertices.append(sf::Vertex(sf::Vector2f(px, py), tileColor, sf::Vector2f(u0, v0)));
             m_tileVertices.append(sf::Vertex(sf::Vector2f(px + m_tileSize, py), tileColor, sf::Vector2f(u1, v0)));
+            m_tileVertices.append(sf::Vertex(sf::Vector2f(px + m_tileSize, py + m_tileSize), tileColor, sf::Vector2f(u1, v1)));
+
+            // Triangle 2 (Top-Left, Bottom-Right, Bottom-Left)
+            m_tileVertices.append(sf::Vertex(sf::Vector2f(px, py), tileColor, sf::Vector2f(u0, v0)));
             m_tileVertices.append(sf::Vertex(sf::Vector2f(px + m_tileSize, py + m_tileSize), tileColor, sf::Vector2f(u1, v1)));
             m_tileVertices.append(sf::Vertex(sf::Vector2f(px, py + m_tileSize), tileColor, sf::Vector2f(u0, v1)));
         }
     }
 
-    // 2. Build Wall Drop-Shadow Quads
+    // 2. Build Wall Drop-Shadow Geometry (2 triangles per shadow strip)
     const sf::Color shadowColor(15, 18, 30, 120);
     const float shadowHeight = 6.0f;
     for (int r = 0; r < m_rows - 1; ++r) {
@@ -141,8 +146,13 @@ void TileMap::rebuildVertexArrays() const {
                 float px = c * m_tileSize;
                 float py = (r + 1) * m_tileSize;
 
+                // Triangle 1 (Top-Left, Top-Right, Bottom-Right)
                 m_shadowVertices.append(sf::Vertex(sf::Vector2f(px, py), shadowColor));
                 m_shadowVertices.append(sf::Vertex(sf::Vector2f(px + m_tileSize, py), shadowColor));
+                m_shadowVertices.append(sf::Vertex(sf::Vector2f(px + m_tileSize, py + shadowHeight), shadowColor));
+
+                // Triangle 2 (Top-Left, Bottom-Right, Bottom-Left)
+                m_shadowVertices.append(sf::Vertex(sf::Vector2f(px, py), shadowColor));
                 m_shadowVertices.append(sf::Vertex(sf::Vector2f(px + m_tileSize, py + shadowHeight), shadowColor));
                 m_shadowVertices.append(sf::Vertex(sf::Vector2f(px, py + shadowHeight), shadowColor));
             }
