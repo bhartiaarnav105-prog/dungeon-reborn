@@ -29,6 +29,62 @@ std::unique_ptr<GameState> GameState::createState(GameState::Type type) {
 // 1. MAIN MENU STATE
 // ============================================================
 void MainMenuState::handleInput(Game& game, const sf::Event& event) {
+    // OOP CONCEPT: ENCAPSULATION & POLYMORPHISM
+    // Why: Mouse and keyboard event handling is encapsulated in each state,
+    // allowing state-specific interactive behavior without polluting the engine loop.
+    if (event.type == sf::Event::MouseMoved) {
+        float mx = static_cast<float>(event.mouseMove.x);
+        float my = static_cast<float>(event.mouseMove.y);
+        // Title menu boxes are centered at X=480 with width 420 (range: [270, 690])
+        if (mx >= 270.0f && mx <= 690.0f) {
+            if (my >= 305.0f && my <= 355.0f) {
+                game.m_menuSelection = 0;
+            } else if (my >= 360.0f && my <= 410.0f) {
+                game.m_menuSelection = 1;
+            } else if (my >= 415.0f && my <= 465.0f) {
+                game.m_menuSelection = 2;
+            }
+        }
+        return;
+    }
+
+    if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left) {
+        float mx = static_cast<float>(event.mouseButton.x);
+        float my = static_cast<float>(event.mouseButton.y);
+        std::cout << "[MainMenu] Mouse click at (" << mx << ", " << my << ")\n";
+
+        // Click on Option 0: PLAY ADVENTURE (or anywhere in its horizontal band / top section)
+        if ((mx >= 200.0f && mx <= 760.0f && my >= 280.0f && my <= 365.0f) ||
+            (game.m_menuSelection == 0 && my >= 250.0f && my <= 380.0f) ||
+            (my <= 360.0f && my >= 180.0f)) {
+            std::cout << "[MainMenu] Starting Adventure from click! State switched to Playing.\n";
+            game.setState(GameState::Playing);
+            if (game.m_soundManager) game.m_soundManager->playSound("coin");
+            return;
+        }
+        // Click on Option 1: CONTROLS & ARCHITECTURE
+        else if (mx >= 200.0f && mx <= 760.0f && my >= 365.0f && my <= 420.0f) {
+            std::cout << "[MainMenu] Opening Controls & Architecture screen.\n";
+            game.setState(GameState::ControlsMenu);
+            if (game.m_soundManager) game.m_soundManager->playSound("coin");
+            return;
+        }
+        // Click on Option 2: EXIT TO DESKTOP
+        else if (mx >= 200.0f && mx <= 760.0f && my >= 425.0f && my <= 480.0f) {
+#ifndef __EMSCRIPTEN__
+            game.m_window.close();
+            game.m_isRunning = false;
+#endif
+            return;
+        } else {
+            // Default: Any click on the canvas starts the adventure
+            std::cout << "[MainMenu] Canvas clicked! Starting adventure...\n";
+            game.setState(GameState::Playing);
+            if (game.m_soundManager) game.m_soundManager->playSound("coin");
+            return;
+        }
+    }
+
     if (event.type != sf::Event::KeyPressed) return;
 
     if (event.key.code == sf::Keyboard::Up || event.key.code == sf::Keyboard::W) {
@@ -69,6 +125,12 @@ void MainMenuState::render(Game& game, sf::RenderTarget& target) {
 // 2. CONTROLS MENU STATE
 // ============================================================
 void ControlsMenuState::handleInput(Game& game, const sf::Event& event) {
+    if (event.type == sf::Event::MouseButtonPressed) {
+        game.setState(GameState::TitleScreen);
+        if (game.m_soundManager) game.m_soundManager->playSound("coin");
+        return;
+    }
+
     if (event.type != sf::Event::KeyPressed) return;
 
     if (event.key.code == sf::Keyboard::Escape ||
@@ -192,6 +254,12 @@ void PlayingState::render(Game& game, sf::RenderTarget& target) {
 // 4. PAUSE STATE
 // ============================================================
 void PauseState::handleInput(Game& game, const sf::Event& event) {
+    if (event.type == sf::Event::MouseButtonPressed) {
+        game.setState(GameState::Playing);
+        if (game.m_soundManager) game.m_soundManager->playSound("coin");
+        return;
+    }
+
     if (event.type != sf::Event::KeyPressed) return;
 
     if (event.key.code == sf::Keyboard::P ||
@@ -221,6 +289,11 @@ void PauseState::render(Game& game, sf::RenderTarget& target) {
 // 5. GAME OVER STATE
 // ============================================================
 void GameOverState::handleInput(Game& game, const sf::Event& event) {
+    if (event.type == sf::Event::MouseButtonPressed) {
+        game.restartGame();
+        return;
+    }
+
     if (event.type != sf::Event::KeyPressed) return;
 
     if (event.key.code == sf::Keyboard::R ||
@@ -248,6 +321,11 @@ void GameOverState::render(Game& game, sf::RenderTarget& target) {
 // 6. VICTORY STATE
 // ============================================================
 void VictoryState::handleInput(Game& game, const sf::Event& event) {
+    if (event.type == sf::Event::MouseButtonPressed) {
+        game.restartGame();
+        return;
+    }
+
     if (event.type != sf::Event::KeyPressed) return;
 
     if (event.key.code == sf::Keyboard::R ||

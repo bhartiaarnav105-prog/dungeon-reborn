@@ -105,7 +105,7 @@ if (ENVIRONMENT_IS_NODE) {
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\bhart\AppData\Local\Temp\tmpdohtxgz_.js
+// include: C:\Users\bhart\AppData\Local\Temp\tmp8m67_crt.js
 if (!Module["expectedDataFileDownloads"]) {
   Module["expectedDataFileDownloads"] = 0;
 }
@@ -332,23 +332,23 @@ Module["expectedDataFileDownloads"]++;
   });
 })();
 
-// end include: C:\Users\bhart\AppData\Local\Temp\tmpdohtxgz_.js
-// include: C:\Users\bhart\AppData\Local\Temp\tmphkwuj0qq.js
+// end include: C:\Users\bhart\AppData\Local\Temp\tmp8m67_crt.js
+// include: C:\Users\bhart\AppData\Local\Temp\tmpj_8z4pwi.js
 // All the pre-js content up to here must remain later on, we need to run
 // it.
 if (Module["$ww"] || (typeof ENVIRONMENT_IS_PTHREAD != "undefined" && ENVIRONMENT_IS_PTHREAD)) Module["preRun"] = [];
 
 var necessaryPreJSTasks = Module["preRun"].slice();
 
-// end include: C:\Users\bhart\AppData\Local\Temp\tmphkwuj0qq.js
-// include: C:\Users\bhart\AppData\Local\Temp\tmpouisfypv.js
+// end include: C:\Users\bhart\AppData\Local\Temp\tmpj_8z4pwi.js
+// include: C:\Users\bhart\AppData\Local\Temp\tmp2zp6ia3j.js
 if (!Module["preRun"]) throw "Module.preRun should exist because file support used it; did a pre-js delete it?";
 
 necessaryPreJSTasks.forEach(task => {
   if (Module["preRun"].indexOf(task) < 0) throw "All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?";
 });
 
-// end include: C:\Users\bhart\AppData\Local\Temp\tmpouisfypv.js
+// end include: C:\Users\bhart\AppData\Local\Temp\tmp2zp6ia3j.js
 // Sometimes an existing Module object exists with properties
 // meant to overwrite the default module functionality. Here
 // we collect those properties and reapply _after_ we configure
@@ -12951,10 +12951,6 @@ function _emscripten_set_wheel_callback_on_thread(target, userData, useCapture, 
   }
 }
 
-var _emscripten_sleep = () => {
-  throw "Please compile your program with async support in order to use asynchronous operations like emscripten_sleep";
-};
-
 var ENV = {};
 
 var getExecutableName = () => thisProgram || "./this.program";
@@ -13625,7 +13621,6 @@ function assignWasmImports() {
     /** @export */ emscripten_set_resize_callback_on_thread: _emscripten_set_resize_callback_on_thread,
     /** @export */ emscripten_set_scroll_callback_on_thread: _emscripten_set_scroll_callback_on_thread,
     /** @export */ emscripten_set_wheel_callback_on_thread: _emscripten_set_wheel_callback_on_thread,
-    /** @export */ emscripten_sleep: _emscripten_sleep,
     /** @export */ environ_get: _environ_get,
     /** @export */ environ_sizes_get: _environ_sizes_get,
     /** @export */ exit: _exit,

@@ -259,7 +259,7 @@
             </div>
 
             <!-- SFML WebGL Canvas -->
-            <canvas class="emscripten" id="canvas" width="960" height="640" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+            <canvas class="emscripten" id="canvas" width="960" height="640" oncontextmenu="event.preventDefault()" tabindex="0"></canvas>
         </div>
 
         <!-- Controls Section -->
@@ -365,8 +365,16 @@
             }
         }
 
-        // Re-focus canvas when user clicks on it
+        // Re-focus canvas when user clicks or touches it
         canvasElement.addEventListener('click', function() {
+            resumeAudio();
+            canvasElement.focus();
+        });
+        canvasElement.addEventListener('pointerdown', function() {
+            resumeAudio();
+            canvasElement.focus();
+        });
+        canvasElement.addEventListener('mousedown', function() {
             resumeAudio();
             canvasElement.focus();
         });

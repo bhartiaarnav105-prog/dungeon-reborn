@@ -30,8 +30,14 @@ Game::Game(unsigned int width, unsigned int height, const std::string& title)
     , m_playerHealthBar(sf::Vector2f(20.0f, 15.0f), sf::Vector2f(200.0f, 22.0f), "KNIGHT HP")
     , m_bossHealthBar(sf::Vector2f((width - 340.0f) * 0.5f, 15.0f), sf::Vector2f(340.0f, 24.0f), "DEMON BOSS")
 {
+#ifdef __EMSCRIPTEN__
+    // Web target: browser's requestAnimationFrame synchronizes frames; avoid synchronous sleep
+    m_window.setFramerateLimit(0);
+    m_window.setVerticalSyncEnabled(false);
+#else
     m_window.setFramerateLimit(60);
     m_window.setVerticalSyncEnabled(true);
+#endif
 
     // OOP CONCEPT: OBJECT LIFETIME AND MEMORY MANAGEMENT (SMART POINTERS)
     // Why: std::make_unique establishes exclusive ownership with RAII.
