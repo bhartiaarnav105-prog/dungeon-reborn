@@ -1,0 +1,35 @@
+# Build directories
+build/
+build-web/
+build_web/
+emsdk/
+
+# IDE and Editor files
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Intermediate & object files
+*.o
+*.obj
+*.lib
+*.a
+*.ninja_deps
+*.ninja_log
+.ninja_*
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# Executables (Desktop builds)
+*.exe
+*.dll
+
+# Keep dist-web for static hosting / deployment
+!dist-web/
+!dist-web/*

@@ -1,0 +1,229 @@
+#include "dungeon/TileMap.hpp"
+#include <iostream>
+
+// ============================================================
+// OOP CONCEPT: CONSTRUCTORS
+// Why: Default constructor leaves the grid empty with zero
+// dimensions; it is valid to call loadFromGrid() later.
+// ============================================================
+TileMap::TileMap()
+    : m_cols(0), m_rows(0), m_tileSize(48.0f) {}
+
+TileMap::TileMap(const std::vector<std::string>& asciiLayout, float tileSize)
+    : m_cols(0), m_rows(0), m_tileSize(tileSize) {
+    loadFromGrid(asciiLayout, tileSize);
+}
+
+// ============================================================
+// OOP CONCEPT: ABSTRACTION
+// Why: Converts a human-readable ASCII grid into a 2D Tile array.
+// The character encoding is an implementation detail hidden here.
+//
+// ASCII legend:
+//   '#' = WallMid (solid)      '@' = WallTop (solid)
+//   '+' = WallCornerTL         '=' = WallCornerTR
+//   '[' = WallCornerBL         ']' = WallCornerBR
+//   '|' = WallSide             'D' = DoorClosed (not solid)
+//   '.' = Floor                'f' = FloorAlt
+//   'T' = Torch                'B' = Banner
+//   'E' = Enemy spawn (floor)  'P' = Player spawn (floor)
+//   ' ' = Empty
+// ============================================================
+void TileMap::loadFromGrid(const std::vector<std::string>& layout, float tileSize) {
+    m_tileSize = tileSize;
+    m_rows     = static_cast<int>(layout.size());
+    m_cols     = m_rows > 0 ? static_cast<int>(layout[0].size()) : 0;
+
+    m_grid.clear();
+    m_grid.resize(m_rows, std::vector<Tile>(m_cols));
+
+    for (int r = 0; r < m_rows; ++r) {
+        for (int c = 0; c < m_cols; ++c) {
+            char ch = (c < static_cast<int>(layout[r].size())) ? layout[r][c] : ' ';
+            m_grid[r][c] = createTile(charToTileType(ch));
+        }
+    }
+}
+
+// Convert ASCII character → TileType
+TileType TileMap::charToTileType(char c) {
+    switch (c) {
+        case '#': return TileType::WallMid;
+        case '@': return TileType::WallTop;
+        case '+': return TileType::WallCornerTL;
+        case '=': return TileType::WallCornerTR;
+        case '[': return TileType::WallCornerBL;
+        case ']': return TileType::WallCornerBR;
+        case '<': return TileType::WallInnerCornerTL;
+        case '>': return TileType::WallInnerCornerTR;
+        case '|': return TileType::WallSide;
+        case 'D': return TileType::DoorOpen;   // door tile (open arch = passable)
+        case '.': return TileType::Floor;
+        case 'f': return TileType::FloorAlt;
+        case 'T': return TileType::Torch;
+        case 'B': return TileType::Banner;
+        case '^': return TileType::Trap;
+        case 'X': return TileType::Exit;
+        case '$': return TileType::Floor;      // chest spawn location
+        case 'K': return TileType::Floor;      // key altar location
+        case 'E': return TileType::Floor;      // enemy spawn → rendered as floor
+        case 'P': return TileType::Floor;      // player spawn → rendered as floor
+        default:  return TileType::Empty;
+    }
+}
+
+// ============================================================
+// OOP CONCEPT: ENCAPSULATION & ABSTRACTION
+// Why: Rendering iterates the private grid and applies a calibrated dungeon color theme.
+// High contrast ensures walls are deep dark stone while floors are bright readable stone,
+// and subtle drop shadows provide pseudo-depth without external rendering engines.
+// ============================================================
+void TileMap::render(sf::RenderTarget& target, const sf::Texture& tileset) const {
+    // Scale factor: tileset uses 16×16 source pixels, we display at 48×48
+    const float scale = m_tileSize / 16.0f;
+
+    // 1. First Pass: Base tiles with cohesive color theme
+    for (int r = 0; r < m_rows; ++r) {
+        for (int c = 0; c < m_cols; ++c) {
+            const Tile& tile = m_grid[r][c];
+            if (tile.type == TileType::Empty) continue;
+
+            sf::Sprite sprite(tileset, tile.textureRect);
+            sprite.setScale(scale, scale);
+            sprite.setPosition(c * m_tileSize, r * m_tileSize);
+
+            // Calibrated visual hierarchy
+            if (tile.isSolid) {
+                // WALLS: Deep dark blue-gray stone (strong contrast vs floor)
+                if (tile.type == TileType::WallTop || tile.type == TileType::WallCornerTL || tile.type == TileType::WallCornerTR) {
+                    sprite.setColor(sf::Color(100, 115, 145)); // Top wall highlight
+                } else {
+                    sprite.setColor(sf::Color(75, 85, 115));   // Dark solid wall face
+                }
+            } else if (tile.type == TileType::Floor) {
+                // FLOORS: Crisp, lighter desaturated stone (high readability)
+                sprite.setColor(sf::Color(215, 222, 235));
+            } else if (tile.type == TileType::FloorAlt) {
+                // CORRIDORS: Warm stone path tone
+                sprite.setColor(sf::Color(185, 195, 218));
+            } else if (tile.type == TileType::DoorOpen || tile.type == TileType::DoorClosed) {
+                // DOORS: Bronze/Gold portal frame
+                sprite.setColor(sf::Color(255, 215, 100));
+            } else if (tile.type == TileType::Trap) {
+                // TRAPS: Warning red-orange
+                sprite.setColor(sf::Color(255, 95, 80));
+            } else if (tile.type == TileType::Torch) {
+                // TORCH: Luminous amber flame
+                sprite.setColor(sf::Color(255, 225, 130));
+            } else if (tile.type == TileType::Banner) {
+                // BANNER: Royal crimson
+                sprite.setColor(sf::Color(235, 70, 80));
+            } else if (tile.type == TileType::Exit) {
+                // EXIT: Mystical glowing cyan
+                sprite.setColor(sf::Color(120, 240, 255));
+            }
+
+            target.draw(sprite);
+        }
+    }
+
+    // 2. Second Pass: Visual depth & drop-shadows below bottom edges of walls onto floors
+    for (int r = 0; r < m_rows - 1; ++r) {
+        for (int c = 0; c < m_cols; ++c) {
+            if (m_grid[r][c].isSolid && !m_grid[r + 1][c].isSolid) {
+                sf::RectangleShape shadow(sf::Vector2f(m_tileSize, 6.0f));
+                shadow.setPosition(c * m_tileSize, (r + 1) * m_tileSize);
+                shadow.setFillColor(sf::Color(15, 18, 30, 120)); // Soft translucent wall shadow
+                target.draw(shadow);
+            }
+        }
+    }
+}
+
+// ============================================================
+// OOP CONCEPT: CONST-CORRECTNESS
+// Why: isSolid and getTileAt are pure queries and are const.
+// ============================================================
+bool TileMap::isSolid(int col, int row) const {
+    if (row < 0 || row >= m_rows || col < 0 || col >= m_cols) return true; // out of bounds = solid
+    return m_grid[row][col].isSolid;
+}
+
+// ============================================================
+// OOP CONCEPT: ENCAPSULATION & ABSTRACTION
+// Why: isWalkable provides high-level queries for navigation and path validation.
+// ============================================================
+bool TileMap::isWalkable(int col, int row) const {
+    return !isSolid(col, row);
+}
+
+bool TileMap::isWalkable(sf::Vector2f worldPos) const {
+    sf::Vector2i tile = worldToTile(worldPos);
+    return isWalkable(tile.x, tile.y);
+}
+
+bool TileMap::isAreaWalkable(const sf::FloatRect& bounds) const {
+    int minCol = static_cast<int>(bounds.left / m_tileSize);
+    int maxCol = static_cast<int>((bounds.left + bounds.width - 0.001f) / m_tileSize);
+    int minRow = static_cast<int>(bounds.top / m_tileSize);
+    int maxRow = static_cast<int>((bounds.top + bounds.height - 0.001f) / m_tileSize);
+
+    for (int r = minRow; r <= maxRow; ++r) {
+        for (int c = minCol; c <= maxCol; ++c) {
+            if (isSolid(c, r)) return false;
+        }
+    }
+    return true;
+}
+
+const Tile& TileMap::getTileAt(int col, int row) const {
+    // Clamp to valid range to avoid out-of-bounds access
+    int r = std::max(0, std::min(row, m_rows - 1));
+    int c = std::max(0, std::min(col, m_cols - 1));
+    return m_grid[r][c];
+}
+
+sf::Vector2i TileMap::worldToTile(sf::Vector2f worldPos) const {
+    return sf::Vector2i(
+        static_cast<int>(worldPos.x / m_tileSize),
+        static_cast<int>(worldPos.y / m_tileSize)
+    );
+}
+
+// ============================================================
+// OOP CONCEPT: ABSTRACTION
+// Why: Callers request solid AABBs without knowing the grid's
+// internal structure. Used by CollisionSystem.
+// ============================================================
+std::vector<sf::FloatRect> TileMap::getSolidRects() const {
+    std::vector<sf::FloatRect> rects;
+    rects.reserve(m_rows * m_cols / 4); // rough estimate
+
+    for (int r = 0; r < m_rows; ++r) {
+        for (int c = 0; c < m_cols; ++c) {
+            if (m_grid[r][c].isSolid) {
+                rects.emplace_back(
+                    c * m_tileSize, r * m_tileSize,
+                    m_tileSize,     m_tileSize
+                );
+            }
+        }
+    }
+    return rects;
+}
+
+// Returns world-space positions of all 'E' (enemy spawn) cells
+std::vector<sf::Vector2f> TileMap::getEnemySpawnPositions() const {
+    // NOTE: enemy spawn cells are stored as Floor tiles after loading;
+    // we do NOT track the original character. The Room class stores
+    // spawn positions separately from the parsed layout. This method
+    // is a no-op here — Room::buildRooms() captures spawn positions
+    // while parsing the ASCII grid before calling loadFromGrid().
+    return {};
+}
+
+sf::Vector2f TileMap::getPlayerSpawnPosition() const {
+    // Similarly delegated to Room. Returns (0,0) as a safe default.
+    return sf::Vector2f(0.f, 0.f);
+}
+
